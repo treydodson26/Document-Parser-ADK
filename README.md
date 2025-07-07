@@ -1,296 +1,335 @@
-# Context Engineering Template
+# Smart Email Automation with Google Sheets Integration
 
-A comprehensive template for getting started with Context Engineering - the discipline of engineering context for AI coding assistants so they have the information necessary to get the job done end to end.
+A powerful Google Apps Script solution that automates personalized email sending using data from Google Sheets with comprehensive error handling, rate limiting, and a user-friendly interface.
 
-> **Context Engineering is 10x better than prompt engineering and 100x better than vibe coding.**
+## Features
 
-## 🚀 Quick Start
+- 📊 **Sheet Integration**: Read recipient data directly from Google Sheets
+- ✉️ **Template System**: Customizable email templates with variable substitution
+- 🚀 **Gmail API**: Robust email sending with proper authentication
+- 📈 **Status Tracking**: Real-time tracking of email status and delivery
+- 🛡️ **Error Handling**: Comprehensive error logging and recovery
+- ⚡ **Rate Limiting**: Intelligent quota management to respect Gmail limits
+- 🧪 **Test Mode**: Safe testing without sending actual emails
+- 📱 **User Interface**: Intuitive sidebar for configuration and monitoring
 
-```bash
-# 1. Clone this template
-git clone https://github.com/coleam00/Context-Engineering-Intro.git
-cd Context-Engineering-Intro
+## Quick Start
 
-# 2. Set up your project rules (optional - template provided)
-# Edit CLAUDE.md to add your project-specific guidelines
+### 1. Setup Your Spreadsheet
 
-# 3. Add examples (highly recommended)
-# Place relevant code examples in the examples/ folder
+Create a Google Spreadsheet with the following columns:
+- `firstName` - Recipient's first name
+- `lastName` - Recipient's last name  
+- `email` - Recipient's email address
+- `emailSent` - Status tracking (will be auto-populated)
+- `errorMessage` - Error details (will be auto-populated)
 
-# 4. Create your initial feature request
-# Edit INITIAL.md with your feature requirements
-
-# 5. Generate a comprehensive PRP (Product Requirements Prompt)
-# In Claude Code, run:
-/generate-prp INITIAL.md
-
-# 6. Execute the PRP to implement your feature
-# In Claude Code, run:
-/execute-prp PRPs/your-feature-name.md
+Example:
+```
+firstName | lastName | email                | emailSent | errorMessage
+John      | Doe      | john.doe@example.com |           |
+Jane      | Smith    | jane.smith@test.com  |           |
 ```
 
-## 📚 Table of Contents
+### 2. Install the Script
 
-- [What is Context Engineering?](#what-is-context-engineering)
-- [Template Structure](#template-structure)
-- [Step-by-Step Guide](#step-by-step-guide)
-- [Writing Effective INITIAL.md Files](#writing-effective-initialmd-files)
-- [The PRP Workflow](#the-prp-workflow)
-- [Using Examples Effectively](#using-examples-effectively)
-- [Best Practices](#best-practices)
+1. Open your Google Spreadsheet
+2. Go to **Extensions** > **Apps Script**
+3. Delete the default `Code.gs` file
+4. Copy all files from this project to your Apps Script project:
+   - Copy `appsscript.json` content to your `appsscript.json`
+   - Create folders: `src/`, `ui/`, `tests/`
+   - Copy all `.gs` and `.html` files to their respective folders
 
-## What is Context Engineering?
+### 3. Authorize and Configure
 
-Context Engineering represents a paradigm shift from traditional prompt engineering:
+1. Save all files in the Apps Script editor
+2. Refresh your spreadsheet
+3. You'll see a new **Email Automation** menu
+4. Click **Email Automation** > **Configure & Send Emails**
+5. Configure your email template in the sidebar
+6. Click **Save Template**
 
-### Prompt Engineering vs Context Engineering
+### 4. Send Emails
 
-**Prompt Engineering:**
-- Focuses on clever wording and specific phrasing
-- Limited to how you phrase a task
-- Like giving someone a sticky note
+1. Enable **Test Mode** for your first run (recommended)
+2. Click **Send Emails Now**
+3. Monitor the progress and results
+4. Disable Test Mode for actual email sending
 
-**Context Engineering:**
-- A complete system for providing comprehensive context
-- Includes documentation, examples, rules, patterns, and validation
-- Like writing a full screenplay with all the details
+## Detailed Usage
 
-### Why Context Engineering Matters
+### Email Templates
 
-1. **Reduces AI Failures**: Most agent failures aren't model failures - they're context failures
-2. **Ensures Consistency**: AI follows your project patterns and conventions
-3. **Enables Complex Features**: AI can handle multi-step implementations with proper context
-4. **Self-Correcting**: Validation loops allow AI to fix its own mistakes
+Templates support variable substitution using `{{variableName}}` syntax:
 
-## Template Structure
-
+**Subject Template:**
 ```
-context-engineering-intro/
-├── .claude/
-│   ├── commands/
-│   │   ├── generate-prp.md    # Generates comprehensive PRPs
-│   │   └── execute-prp.md     # Executes PRPs to implement features
-│   └── settings.local.json    # Claude Code permissions
-├── PRPs/
-│   ├── templates/
-│   │   └── prp_base.md       # Base template for PRPs
-│   └── EXAMPLE_multi_agent_prp.md  # Example of a complete PRP
-├── examples/                  # Your code examples (critical!)
-├── CLAUDE.md                 # Global rules for AI assistant
-├── INITIAL.md               # Template for feature requests
-├── INITIAL_EXAMPLE.md       # Example feature request
-└── README.md                # This file
+Hello {{firstName}} - Your Account Update
 ```
 
-This template doesn't focus on RAG and tools with context engineering because I have a LOT more in store for that soon. ;)
+**Body Template:**
+```
+Dear {{firstName}} {{lastName}},
 
-## Step-by-Step Guide
+We hope this email finds you well. Your account status is currently {{status}}.
 
-### 1. Set Up Global Rules (CLAUDE.md)
+If you have any questions, please don't hesitate to contact us.
 
-The `CLAUDE.md` file contains project-wide rules that the AI assistant will follow in every conversation. The template includes:
-
-- **Project awareness**: Reading planning docs, checking tasks
-- **Code structure**: File size limits, module organization
-- **Testing requirements**: Unit test patterns, coverage expectations
-- **Style conventions**: Language preferences, formatting rules
-- **Documentation standards**: Docstring formats, commenting practices
-
-**You can use the provided template as-is or customize it for your project.**
-
-### 2. Create Your Initial Feature Request
-
-Edit `INITIAL.md` to describe what you want to build:
-
-```markdown
-## FEATURE:
-[Describe what you want to build - be specific about functionality and requirements]
-
-## EXAMPLES:
-[List any example files in the examples/ folder and explain how they should be used]
-
-## DOCUMENTATION:
-[Include links to relevant documentation, APIs, or MCP server resources]
-
-## OTHER CONSIDERATIONS:
-[Mention any gotchas, specific requirements, or things AI assistants commonly miss]
+Best regards,
+The Team
 ```
 
-**See `INITIAL_EXAMPLE.md` for a complete example.**
+### Available Variables
 
-### 3. Generate the PRP
+Any column from your spreadsheet can be used as a variable:
+- `{{firstName}}` - First name column
+- `{{lastName}}` - Last name column
+- `{{email}}` - Email address
+- `{{customField}}` - Any additional column you add
 
-PRPs (Product Requirements Prompts) are comprehensive implementation blueprints that include:
+### Menu Options
 
-- Complete context and documentation
-- Implementation steps with validation
-- Error handling patterns
-- Test requirements
+**Email Automation Menu:**
+- **Configure & Send Emails** - Opens the configuration sidebar
+- **Send Emails Now** - Runs automation with current settings
+- **Preview Template** - Shows how your template will look
+- **View Logs** - Displays recent activity and errors
+- **Reset Daily Counter** - Resets the daily email quota counter
 
-They are similar to PRDs (Product Requirements Documents) but are crafted more specifically to instruct an AI coding assistant.
+### Status Tracking
 
-Run in Claude Code:
-```bash
-/generate-prp INITIAL.md
-```
+The system automatically updates your spreadsheet with:
+- **emailSent**: `pending`, `processing`, `sent`, or `failed`
+- **errorMessage**: Details about any delivery failures
 
-**Note:** The slash commands are custom commands defined in `.claude/commands/`. You can view their implementation:
-- `.claude/commands/generate-prp.md` - See how it researches and creates PRPs
-- `.claude/commands/execute-prp.md` - See how it implements features from PRPs
+### Test Mode
 
-The `$ARGUMENTS` variable in these commands receives whatever you pass after the command name (e.g., `INITIAL.md` or `PRPs/your-feature.md`).
+Always test your automation first:
+1. Enable **Test Mode** in the sidebar
+2. Run the automation
+3. Check the logs to see what would have been sent
+4. Disable Test Mode for actual sending
 
-This command will:
-1. Read your feature request
-2. Research the codebase for patterns
-3. Search for relevant documentation
-4. Create a comprehensive PRP in `PRPs/your-feature-name.md`
+## Configuration Options
 
-### 4. Execute the PRP
+### Batch Size
+- **5 emails per batch**: Conservative, slower processing
+- **10 emails per batch**: Balanced (recommended)
+- **25 emails per batch**: Faster, but may hit rate limits
 
-Once generated, execute the PRP to implement your feature:
+### Advanced Configuration
 
-```bash
-/execute-prp PRPs/your-feature-name.md
-```
+Edit `src/Config.gs` to customize:
+- Daily email limits
+- Rate limiting settings
+- Error message templates
+- UI text and branding
 
-The AI coding assistant will:
-1. Read all context from the PRP
-2. Create a detailed implementation plan
-3. Execute each step with validation
-4. Run tests and fix any issues
-5. Ensure all success criteria are met
+## Quotas and Limits
 
-## Writing Effective INITIAL.md Files
+### Gmail API Limits
+- **100 emails/day** for consumer Gmail accounts
+- **250 quota units per 100 seconds** rate limit
+- **Batch processing** to optimize quota usage
 
-### Key Sections Explained
+### Best Practices
+- Start with Test Mode enabled
+- Send emails in smaller batches during peak hours
+- Monitor quota usage in the sidebar
+- Use descriptive subject lines to avoid spam filters
 
-**FEATURE**: Be specific and comprehensive
-- ❌ "Build a web scraper"
-- ✅ "Build an async web scraper using BeautifulSoup that extracts product data from e-commerce sites, handles rate limiting, and stores results in PostgreSQL"
+## Troubleshooting
 
-**EXAMPLES**: Leverage the examples/ folder
-- Place relevant code patterns in `examples/`
-- Reference specific files and patterns to follow
-- Explain what aspects should be mimicked
+### Common Issues
 
-**DOCUMENTATION**: Include all relevant resources
-- API documentation URLs
-- Library guides
-- MCP server documentation
-- Database schemas
+**"Spreadsheet ID required" Error**
+- Ensure the script is bound to a spreadsheet
+- Check that you have edit permissions
 
-**OTHER CONSIDERATIONS**: Capture important details
-- Authentication requirements
-- Rate limits or quotas
-- Common pitfalls
-- Performance requirements
+**"Missing required columns" Error**
+- Verify your spreadsheet has: `firstName`, `lastName`, `email` columns
+- Check column names match exactly (case-sensitive)
 
-## The PRP Workflow
+**"Daily email quota exceeded"**
+- Wait until the next day for quota reset
+- Or use **Reset Daily Counter** if counter is inaccurate
 
-### How /generate-prp Works
+**"Rate limit exceeded"**
+- Reduce batch size in settings
+- Wait a few minutes before retrying
 
-The command follows this process:
+**Permission Issues**
+- Reauthorize the script in Apps Script editor
+- Check Gmail and Sheets API permissions
 
-1. **Research Phase**
-   - Analyzes your codebase for patterns
-   - Searches for similar implementations
-   - Identifies conventions to follow
+### Debugging
 
-2. **Documentation Gathering**
-   - Fetches relevant API docs
-   - Includes library documentation
-   - Adds gotchas and quirks
+1. **Check Logs**: Use **View Logs** menu option
+2. **Test Mode**: Always test before production sending
+3. **Preview**: Use **Preview Template** to verify formatting
+4. **Status Column**: Monitor `emailSent` status in spreadsheet
 
-3. **Blueprint Creation**
-   - Creates step-by-step implementation plan
-   - Includes validation gates
-   - Adds test requirements
+### Error Codes
 
-4. **Quality Check**
-   - Scores confidence level (1-10)
-   - Ensures all context is included
+- `pending`: Email not yet processed
+- `processing`: Currently being sent
+- `sent`: Successfully delivered
+- `failed`: Delivery failed (check errorMessage column)
 
-### How /execute-prp Works
-
-1. **Load Context**: Reads the entire PRP
-2. **Plan**: Creates detailed task list using TodoWrite
-3. **Execute**: Implements each component
-4. **Validate**: Runs tests and linting
-5. **Iterate**: Fixes any issues found
-6. **Complete**: Ensures all requirements met
-
-See `PRPs/EXAMPLE_multi_agent_prp.md` for a complete example of what gets generated.
-
-## Using Examples Effectively
-
-The `examples/` folder is **critical** for success. AI coding assistants perform much better when they can see patterns to follow.
-
-### What to Include in Examples
-
-1. **Code Structure Patterns**
-   - How you organize modules
-   - Import conventions
-   - Class/function patterns
-
-2. **Testing Patterns**
-   - Test file structure
-   - Mocking approaches
-   - Assertion styles
-
-3. **Integration Patterns**
-   - API client implementations
-   - Database connections
-   - Authentication flows
-
-4. **CLI Patterns**
-   - Argument parsing
-   - Output formatting
-   - Error handling
-
-### Example Structure
+## File Structure
 
 ```
-examples/
-├── README.md           # Explains what each example demonstrates
-├── cli.py             # CLI implementation pattern
-├── agent/             # Agent architecture patterns
-│   ├── agent.py      # Agent creation pattern
-│   ├── tools.py      # Tool implementation pattern
-│   └── providers.py  # Multi-provider pattern
-└── tests/            # Testing patterns
-    ├── test_agent.py # Unit test patterns
-    └── conftest.py   # Pytest configuration
+├── appsscript.json              # Project configuration
+├── src/
+│   ├── Config.gs               # Configuration constants
+│   ├── SmartEmailAutomation.gs # Main automation logic
+│   ├── SheetDataManager.gs     # Spreadsheet operations
+│   ├── EmailTemplateProcessor.gs # Template processing
+│   ├── EmailSender.gs          # Gmail API wrapper
+│   └── ErrorHandler.gs         # Error handling & logging
+├── ui/
+│   ├── Sidebar.html            # Configuration interface
+│   ├── Stylesheet.html         # CSS styling
+│   └── SidebarJavaScript.html  # UI functionality
+├── tests/
+│   └── test_SmartEmailAutomation.gs # Unit tests
+└── README.md                   # This documentation
 ```
 
-## Best Practices
+## Development
 
-### 1. Be Explicit in INITIAL.md
-- Don't assume the AI knows your preferences
-- Include specific requirements and constraints
-- Reference examples liberally
+### Running Tests
 
-### 2. Provide Comprehensive Examples
-- More examples = better implementations
-- Show both what to do AND what not to do
-- Include error handling patterns
+Execute tests in the Apps Script editor:
+```javascript
+// Run all tests
+RUN_ALL_TESTS();
 
-### 3. Use Validation Gates
-- PRPs include test commands that must pass
-- AI will iterate until all validations succeed
-- This ensures working code on first try
+// Run individual module tests
+TEST_EMAIL_TEMPLATE_PROCESSOR();
+TEST_SHEET_DATA_MANAGER();
+TEST_EMAIL_SENDER();
+TEST_ERROR_HANDLER();
+TEST_SMART_EMAIL_AUTOMATION();
+```
 
-### 4. Leverage Documentation
-- Include official API docs
-- Add MCP server resources
-- Reference specific documentation sections
+### Adding Features
 
-### 5. Customize CLAUDE.md
-- Add your conventions
-- Include project-specific rules
-- Define coding standards
+1. Follow the existing module structure
+2. Add configuration constants to `Config.gs`
+3. Implement error handling with `ErrorHandler`
+4. Add unit tests for new functionality
+5. Update this README with new features
 
-## Resources
+## Security Best Practices
 
-- [Claude Code Documentation](https://docs.anthropic.com/en/docs/claude-code)
-- [Context Engineering Best Practices](https://www.philschmid.de/context-engineering)
+- **Never hardcode sensitive data** in the script
+- **Use Test Mode** before production deployment
+- **Monitor logs** for suspicious activity
+- **Limit script permissions** to necessary scopes only
+- **Regular backups** of your spreadsheet data
+
+## API Reference
+
+### SmartEmailAutomation Class
+
+```javascript
+const automation = new SmartEmailAutomation();
+
+// Configure email template
+automation.configure({
+  emailTemplate: {
+    subject: "Hello {{firstName}}",
+    body: "Dear {{firstName}} {{lastName}}, ..."
+  }
+});
+
+// Enable test mode
+automation.setTestMode(true);
+
+// Run automation
+const result = automation.runAutomation();
+```
+
+### EmailTemplateProcessor Class
+
+```javascript
+const processor = new EmailTemplateProcessor();
+
+// Process template
+const result = processor.processTemplate(
+  "Hello {{name}}", 
+  { name: "John" }
+); // Returns: "Hello John"
+
+// Validate template
+const validation = processor.validateTemplate({
+  subject: "Test",
+  body: "Hello {{name}}"
+});
+```
+
+### SheetDataManager Class
+
+```javascript
+const manager = new SheetDataManager(spreadsheetId);
+
+// Read email data
+const emailData = manager.readEmailData();
+
+// Update status
+manager.updateEmailStatus(2, EmailStatus.SENT);
+
+// Get pending emails
+const pending = manager.getPendingEmails();
+```
+
+## Support
+
+### Getting Help
+
+1. **Check this README** for common solutions
+2. **Review the logs** using the View Logs menu
+3. **Test in Test Mode** to isolate issues
+4. **Check Google Apps Script quotas** in Google Cloud Console
+
+### Contributing
+
+This project follows Google Apps Script best practices:
+- V8 runtime compatibility
+- Comprehensive error handling
+- Unit testing coverage
+- Documentation standards
+
+## License
+
+Copyright 2024 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+## Changelog
+
+### Version 1.0.0
+- Initial release
+- Complete email automation workflow
+- Template processing with variable substitution
+- Comprehensive error handling and logging
+- User-friendly sidebar interface
+- Rate limiting and quota management
+- Test mode for safe testing
+- Full unit test coverage
+
+---
+
+**Smart Email Automation** - Streamline your email campaigns with the power of Google Sheets and Google Apps Script.

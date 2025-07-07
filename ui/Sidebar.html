@@ -1,0 +1,125 @@
+<!--
+ * Copyright 2024 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ -->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <!-- Use a templated HTML printing scriptlet to import common stylesheet -->
+    <?!= HtmlService.createHtmlOutputFromFile('Stylesheet').getContent(); ?>
+  </head>
+  <body>
+    <!-- Smart Email Automation Configuration Sidebar -->
+    <div class="sidebar branding-below">
+      <div class="section">
+        <h3>Smart Email Automation</h3>
+        <p class="description">
+          Configure and send personalized emails from your spreadsheet data.
+        </p>
+      </div>
+
+      <!-- Status Section -->
+      <div class="section" id="status-section">
+        <h4>Status</h4>
+        <div id="status-info" class="status-info">
+          <p>Loading status...</p>
+        </div>
+      </div>
+
+      <!-- Email Template Section -->
+      <div class="section" id="template-section">
+        <h4>Email Template</h4>
+        
+        <div class="form-group">
+          <label for="email-subject">Subject:</label>
+          <input type="text" id="email-subject" class="width-100" 
+                 placeholder="Hello {{firstName}}" value="">
+        </div>
+        
+        <div class="form-group">
+          <label for="email-body">Body:</label>
+          <textarea id="email-body" class="width-100" rows="6" 
+                    placeholder="Dear {{firstName}} {{lastName}},&#10;&#10;Your message here.&#10;&#10;Best regards,&#10;The Team"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="enable-html"> Enable HTML formatting
+          </label>
+        </div>
+
+        <div class="button-group">
+          <button id="preview-template-btn" class="secondary">Preview Template</button>
+          <button id="save-template-btn" class="primary">Save Template</button>
+        </div>
+      </div>
+
+      <!-- Advanced Options Section -->
+      <div class="section" id="options-section">
+        <h4>Options</h4>
+        
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="test-mode"> Test Mode (no emails sent)
+          </label>
+        </div>
+        
+        <div class="form-group">
+          <label for="batch-size">Batch Size:</label>
+          <select id="batch-size" class="width-100">
+            <option value="5">5 emails per batch</option>
+            <option value="10" selected>10 emails per batch</option>
+            <option value="25">25 emails per batch</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="section" id="action-section">
+        <div class="button-group vertical">
+          <button id="send-emails-btn" class="primary large">Send Emails Now</button>
+          <button id="refresh-status-btn" class="secondary">Refresh Status</button>
+        </div>
+      </div>
+
+      <!-- Progress Section -->
+      <div class="section" id="progress-section" style="display: none;">
+        <h4>Progress</h4>
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div id="progress-fill" class="progress-fill" style="width: 0%;"></div>
+          </div>
+          <div id="progress-text" class="progress-text">0% complete</div>
+        </div>
+        <div id="progress-details" class="progress-details"></div>
+      </div>
+
+      <!-- Results Section -->
+      <div class="section" id="results-section" style="display: none;">
+        <h4>Results</h4>
+        <div id="results-content" class="results-content"></div>
+      </div>
+    </div>
+
+    <!-- Enter sidebar bottom-branding below. -->
+    <div class="sidebar bottom">
+      <span class="gray branding-text">Smart Email Automation powered by Google Apps Script</span>
+    </div>
+
+    <!-- Use a templated HTML printing scriptlet to import JavaScript. -->
+    <?!= HtmlService.createHtmlOutputFromFile('SidebarJavaScript').getContent(); ?>
+  </body>
+</html>

@@ -1,0 +1,560 @@
+<!--
+ * Copyright 2024 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ -->
+
+<script>
+/**
+ * Smart Email Automation Sidebar JavaScript
+ * Handles UI interactions and server communication
+ */
+
+// Global state
+let automationStatus = null;
+let isOperationInProgress = false;
+
+// Initialize the sidebar when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  initializeSidebar();
+});
+
+/**
+ * Initializes the sidebar interface
+ */
+function initializeSidebar() {
+  // Set up event listeners
+  setupEventListeners();
+  
+  // Load initial status and configuration
+  refreshStatus();
+  
+  // Load saved template if available
+  loadSavedTemplate();
+}
+
+/**
+ * Sets up event listeners for UI elements
+ */
+function setupEventListeners() {
+  // Template buttons
+  document.getElementById('preview-template-btn').addEventListener('click', previewTemplate);
+  document.getElementById('save-template-btn').addEventListener('click', saveTemplate);
+  
+  // Action buttons
+  document.getElementById('send-emails-btn').addEventListener('click', sendEmails);
+  document.getElementById('refresh-status-btn').addEventListener('click', refreshStatus);
+  
+  // Form validation
+  document.getElementById('email-subject').addEventListener('input', validateForm);
+  document.getElementById('email-body').addEventListener('input', validateForm);
+}
+
+/**
+ * Refreshes the automation status
+ */
+function refreshStatus() {
+  showStatusLoading();
+  
+  google.script.run
+    .withSuccessHandler(handleStatusSuccess)
+    .withFailureHandler(handleStatusError)
+    .getAutomationStatus();
+}
+
+/**
+ * Handles successful status response
+ * @param {Object} status - Status object from server
+ */
+function handleStatusSuccess(status) {
+  automationStatus = status;
+  updateStatusDisplay(status);
+  hideStatusLoading();
+}
+
+/**
+ * Handles status error
+ * @param {Error} error - Error object
+ */
+function handleStatusError(error) {
+  console.error('Failed to get status:', error);
+  showStatusError('Failed to load status: ' + error.message);
+  hideStatusLoading();
+}
+
+/**
+ * Updates the status display
+ * @param {Object} status - Status object
+ */
+function updateStatusDisplay(status) {
+  const statusInfo = document.getElementById('status-info');
+  
+  let statusHtml = '';
+  
+  if (status.error) {
+    statusHtml = `<p class="status-error">Error: ${status.error}</p>`;
+  } else {
+    statusHtml = `
+      <p><strong>Pending emails:</strong> <span class="${status.pendingEmails > 0 ? 'status-warning' : 'status-good'}">${status.pendingEmails}</span></p>
+      <p><strong>Daily quota remaining:</strong> <span class="${status.remainingQuota < 10 ? 'status-warning' : 'status-good'}">${status.remainingQuota}</span></p>
+      <p><strong>Test mode:</strong> <span class="${status.testMode ? 'status-warning' : 'status-good'}">${status.testMode ? 'Enabled' : 'Disabled'}</span></p>
+    `;
+    
+    if (status.errorStats && status.errorStats.byLevel && status.errorStats.byLevel.ERROR > 0) {
+      statusHtml += `<p><strong>Recent errors:</strong> <span class="status-error">${status.errorStats.byLevel.ERROR}</span></p>`;
+    }
+  }
+  
+  statusInfo.innerHTML = statusHtml;
+  
+  // Update test mode checkbox
+  if (status.testMode !== undefined) {
+    document.getElementById('test-mode').checked = status.testMode;
+  }
+  
+  // Update send button state
+  updateSendButtonState(status);
+}
+
+/**
+ * Updates the send button state based on status
+ * @param {Object} status - Status object
+ */
+function updateSendButtonState(status) {
+  const sendButton = document.getElementById('send-emails-btn');
+  
+  if (status.pendingEmails === 0) {
+    sendButton.disabled = true;
+    sendButton.textContent = 'No Pending Emails';
+  } else if (status.remainingQuota === 0) {
+    sendButton.disabled = true;
+    sendButton.textContent = 'Daily Quota Exceeded';
+  } else {
+    sendButton.disabled = false;
+    sendButton.textContent = `Send ${status.pendingEmails} Emails`;
+  }
+}
+
+/**
+ * Shows loading state for status
+ */
+function showStatusLoading() {
+  const statusInfo = document.getElementById('status-info');
+  statusInfo.innerHTML = '<p><span class="spinner"></span>Loading status...</p>';
+}
+
+/**
+ * Hides loading state for status
+ */
+function hideStatusLoading() {
+  // Loading state is replaced by actual status in updateStatusDisplay
+}
+
+/**
+ * Shows status error
+ * @param {string} message - Error message
+ */
+function showStatusError(message) {
+  const statusInfo = document.getElementById('status-info');
+  statusInfo.innerHTML = `<p class="status-error">${message}</p>`;
+}
+
+/**
+ * Loads saved template configuration
+ */
+function loadSavedTemplate() {
+  google.script.run
+    .withSuccessHandler(handleTemplateLoadSuccess)
+    .withFailureHandler(handleTemplateLoadError)
+    .getSavedTemplate();
+}
+
+/**
+ * Handles successful template load
+ * @param {Object} template - Template object
+ */
+function handleTemplateLoadSuccess(template) {
+  if (template) {
+    document.getElementById('email-subject').value = template.subject || '';
+    document.getElementById('email-body').value = template.body || '';
+    document.getElementById('enable-html').checked = !!template.htmlBody;
+  }
+  validateForm();
+}
+
+/**
+ * Handles template load error
+ * @param {Error} error - Error object
+ */
+function handleTemplateLoadError(error) {
+  console.log('Could not load saved template:', error.message);
+  // This is not critical, just use defaults
+}
+
+/**
+ * Validates the form and updates UI accordingly
+ */
+function validateForm() {
+  const subject = document.getElementById('email-subject').value.trim();
+  const body = document.getElementById('email-body').value.trim();
+  const isValid = subject || body; // At least one is required
+  
+  // Update save button state
+  const saveButton = document.getElementById('save-template-btn');
+  saveButton.disabled = !isValid;
+  
+  // Update preview button state
+  const previewButton = document.getElementById('preview-template-btn');
+  previewButton.disabled = !isValid;
+}
+
+/**
+ * Previews the email template
+ */
+function previewTemplate() {
+  if (isOperationInProgress) return;
+  
+  const template = getTemplateFromForm();
+  if (!template) return;
+  
+  setOperationInProgress(true, 'Generating preview...');
+  
+  google.script.run
+    .withSuccessHandler(handlePreviewSuccess)
+    .withFailureHandler(handlePreviewError)
+    .previewEmailTemplate(template);
+}
+
+/**
+ * Handles successful template preview
+ * @param {Object} preview - Preview object
+ */
+function handlePreviewSuccess(preview) {
+  setOperationInProgress(false);
+  
+  const message = `Subject: ${preview.subject}\n\nBody:\n${preview.body}`;
+  alert('Email Template Preview:\n\n' + message);
+}
+
+/**
+ * Handles template preview error
+ * @param {Error} error - Error object
+ */
+function handlePreviewError(error) {
+  setOperationInProgress(false);
+  alert('Failed to generate preview: ' + error.message);
+}
+
+/**
+ * Saves the email template
+ */
+function saveTemplate() {
+  if (isOperationInProgress) return;
+  
+  const template = getTemplateFromForm();
+  if (!template) return;
+  
+  setOperationInProgress(true, 'Saving template...');
+  
+  google.script.run
+    .withSuccessHandler(handleSaveSuccess)
+    .withFailureHandler(handleSaveError)
+    .saveEmailTemplate(template);
+}
+
+/**
+ * Handles successful template save
+ */
+function handleSaveSuccess() {
+  setOperationInProgress(false);
+  showTemporaryMessage('Template saved successfully!', 'success');
+}
+
+/**
+ * Handles template save error
+ * @param {Error} error - Error object
+ */
+function handleSaveError(error) {
+  setOperationInProgress(false);
+  alert('Failed to save template: ' + error.message);
+}
+
+/**
+ * Sends emails using the current configuration
+ */
+function sendEmails() {
+  if (isOperationInProgress) return;
+  
+  const template = getTemplateFromForm();
+  if (!template) {
+    alert('Please configure an email template first.');
+    return;
+  }
+  
+  // Confirm action
+  const testMode = document.getElementById('test-mode').checked;
+  const confirmMessage = testMode 
+    ? 'This will run in test mode (no emails will be sent). Continue?'
+    : 'This will send emails to all pending recipients. Continue?';
+  
+  if (!confirm(confirmMessage)) {
+    return;
+  }
+  
+  // Start email sending process
+  startEmailSending(template, testMode);
+}
+
+/**
+ * Starts the email sending process
+ * @param {Object} template - Email template
+ * @param {boolean} testMode - Whether to run in test mode
+ */
+function startEmailSending(template, testMode) {
+  setOperationInProgress(true, 'Sending emails...');
+  showProgressSection();
+  
+  const config = {
+    emailTemplate: template,
+    testMode: testMode,
+    batchSize: parseInt(document.getElementById('batch-size').value)
+  };
+  
+  google.script.run
+    .withSuccessHandler(handleEmailSendSuccess)
+    .withFailureHandler(handleEmailSendError)
+    .runEmailAutomationWithConfig(config);
+}
+
+/**
+ * Handles successful email sending
+ * @param {Object} result - Result object
+ */
+function handleEmailSendSuccess(result) {
+  setOperationInProgress(false);
+  hideProgressSection();
+  showResultsSection(result);
+  
+  // Refresh status to show updated counts
+  setTimeout(refreshStatus, 1000);
+}
+
+/**
+ * Handles email sending error
+ * @param {Error} error - Error object
+ */
+function handleEmailSendError(error) {
+  setOperationInProgress(false);
+  hideProgressSection();
+  alert('Failed to send emails: ' + error.message);
+}
+
+/**
+ * Gets template configuration from form
+ * @returns {Object|null} Template object or null if invalid
+ */
+function getTemplateFromForm() {
+  const subject = document.getElementById('email-subject').value.trim();
+  const body = document.getElementById('email-body').value.trim();
+  const enableHtml = document.getElementById('enable-html').checked;
+  
+  if (!subject && !body) {
+    alert('Please enter either a subject or body for the email template.');
+    return null;
+  }
+  
+  const template = {
+    subject: subject,
+    body: body
+  };
+  
+  if (enableHtml) {
+    template.htmlBody = body; // Use same content as HTML
+  }
+  
+  return template;
+}
+
+/**
+ * Sets operation in progress state
+ * @param {boolean} inProgress - Whether operation is in progress
+ * @param {string} message - Optional progress message
+ */
+function setOperationInProgress(inProgress, message = '') {
+  isOperationInProgress = inProgress;
+  
+  // Disable/enable buttons
+  const buttons = document.querySelectorAll('button');
+  buttons.forEach(button => {
+    button.disabled = inProgress;
+  });
+  
+  if (inProgress && message) {
+    showTemporaryMessage(message, 'info');
+  }
+}
+
+/**
+ * Shows progress section
+ */
+function showProgressSection() {
+  document.getElementById('progress-section').style.display = 'block';
+  updateProgress(0, 'Starting...');
+}
+
+/**
+ * Hides progress section
+ */
+function hideProgressSection() {
+  document.getElementById('progress-section').style.display = 'none';
+}
+
+/**
+ * Updates progress display
+ * @param {number} percent - Progress percentage (0-100)
+ * @param {string} text - Progress text
+ */
+function updateProgress(percent, text) {
+  document.getElementById('progress-fill').style.width = percent + '%';
+  document.getElementById('progress-text').textContent = percent + '% complete';
+  document.getElementById('progress-details').textContent = text;
+}
+
+/**
+ * Shows results section
+ * @param {Object} result - Result object
+ */
+function showResultsSection(result) {
+  const resultsSection = document.getElementById('results-section');
+  const resultsContent = document.getElementById('results-content');
+  
+  let resultHtml = '';
+  
+  if (result.success) {
+    resultHtml = `
+      <div class="results-success">
+        <p><strong>Email automation completed successfully!</strong></p>
+        <p>Emails processed: ${result.emailsProcessed}</p>
+        <p>Emails sent: ${result.emailsSent}</p>
+        ${result.emailsFailed > 0 ? `<p>Emails failed: ${result.emailsFailed}</p>` : ''}
+      </div>
+    `;
+    
+    if (result.errors && result.errors.length > 0) {
+      resultHtml += '<div class="results-error"><p><strong>Errors:</strong></p>';
+      result.errors.slice(0, 5).forEach(error => {
+        resultHtml += `<p>• ${error}</p>`;
+      });
+      if (result.errors.length > 5) {
+        resultHtml += `<p>... and ${result.errors.length - 5} more</p>`;
+      }
+      resultHtml += '</div>';
+    }
+  } else {
+    resultHtml = `
+      <div class="results-error">
+        <p><strong>Email automation failed</strong></p>
+        <p>${result.errors ? result.errors.join(', ') : 'Unknown error'}</p>
+      </div>
+    `;
+  }
+  
+  resultsContent.innerHTML = resultHtml;
+  resultsSection.style.display = 'block';
+  
+  // Auto-hide after 10 seconds
+  setTimeout(() => {
+    resultsSection.style.display = 'none';
+  }, 10000);
+}
+
+/**
+ * Shows a temporary message
+ * @param {string} message - Message to show
+ * @param {string} type - Message type (success, error, info)
+ */
+function showTemporaryMessage(message, type = 'info') {
+  // Create temporary message element
+  const messageDiv = document.createElement('div');
+  messageDiv.className = `message message-${type}`;
+  messageDiv.textContent = message;
+  messageDiv.style.cssText = `
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    background: ${type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#d1ecf1'};
+    color: ${type === 'success' ? '#155724' : type === 'error' ? '#721c24' : '#0c5460'};
+    border: 1px solid ${type === 'success' ? '#c3e6cb' : type === 'error' ? '#f5c6cb' : '#bee5eb'};
+    border-radius: 4px;
+    padding: 10px;
+    font-size: 12px;
+    z-index: 1000;
+  `;
+  
+  document.body.appendChild(messageDiv);
+  
+  // Remove after 3 seconds
+  setTimeout(() => {
+    if (messageDiv.parentNode) {
+      messageDiv.parentNode.removeChild(messageDiv);
+    }
+  }, 3000);
+}
+
+// Server-side function stubs for communication
+// These correspond to functions in SmartEmailAutomation.gs
+
+/**
+ * Gets automation status from server
+ */
+function getAutomationStatus() {
+  // This function is called via google.script.run
+  // Implementation is in SmartEmailAutomation.gs
+}
+
+/**
+ * Gets saved template from server
+ */
+function getSavedTemplate() {
+  // This function is called via google.script.run
+  // Implementation is in SmartEmailAutomation.gs
+}
+
+/**
+ * Previews email template
+ * @param {Object} template - Template to preview
+ */
+function previewEmailTemplate(template) {
+  // This function is called via google.script.run
+  // Implementation is in SmartEmailAutomation.gs
+}
+
+/**
+ * Saves email template
+ * @param {Object} template - Template to save
+ */
+function saveEmailTemplate(template) {
+  // This function is called via google.script.run
+  // Implementation is in SmartEmailAutomation.gs
+}
+
+/**
+ * Runs email automation with configuration
+ * @param {Object} config - Configuration object
+ */
+function runEmailAutomationWithConfig(config) {
+  // This function is called via google.script.run
+  // Implementation is in SmartEmailAutomation.gs
+}
+</script>
